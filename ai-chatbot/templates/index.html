@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🤖 AI Chatbot</h1>
+            <button id="reset-btn">Reset Chat</button>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div class="chat-box" id="chat-box">
+            <!-- Welcome message -->
+            <div class="message bot">
+                <span>Hello! I'm your local AI assistant. Ask me anything!</span>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Type your message here..." autocomplete="off">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const chatBox = document.getElementById("chat-box");
+        const messageInput = document.getElementById("message-input");
+        const sendBtn = document.getElementById("send-btn");
+        const resetBtn = document.getElementById("reset-btn");
+
+        // Add a message to the chat box
+        function addMessage(text, type, thinking = false) {
+            const message = document.createElement("div");
+            message.className = "message " + type;
+
+            if (thinking) {
+                message.id = "thinking";
+            }
+
+            const textElement = document.createElement("span");
+            textElement.textContent = text;
+            message.appendChild(textElement);
+
+            // Add Copy button only to AI messages (not thinking)
+            if (type === "bot" && !thinking) {
+                const copyButton = document.createElement("button");
+                copyButton.textContent = "📋 Copy";
+                copyButton.className = "copy-btn";
+
+                copyButton.onclick = async function() {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        copyButton.textContent = "✅ Copied!";
+                        setTimeout(function() {
+                            copyButton.textContent = "📋 Copy";
+                        }, 1500);
+                    } catch (error) {
+                        copyButton.textContent = "❌ Failed";
+                    }
+                };
+
+                message.appendChild(copyButton);
+            }
+
+            chatBox.appendChild(message);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Send a message to the server
+        async function sendMessage() {
+            const userMessage = messageInput.value.trim();
+
+            if (!userMessage) {
+                return;
+            }
+
+            // Add user message to chat
+            addMessage(userMessage, "user");
+            messageInput.value = "";
+
+            // Show thinking indicator
+            const thinkingMsg = document.createElement("div");
+            thinkingMsg.className = "message bot";
+            thinkingMsg.id = "thinking";
+            const thinkingSpan = document.createElement("span");
+            thinkingSpan.textContent = "Thinking";
+            thinkingMsg.appendChild(thinkingSpan);
+            chatBox.appendChild(thinkingMsg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ message: userMessage })
+                });
+
+                // Remove thinking indicator
+                const thinkingElement = document.getElementById("thinking");
+                if (thinkingElement) {
+                    thinkingElement.remove();
+                }
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Add bot reply
+                    addMessage(data.reply, "bot");
+                } else {
+                    // Show error message
+                    addMessage("❌ Error: " + (data.error || "Something went wrong"), "bot");
+                }
+            } catch (error) {
+                // Remove thinking indicator
+                const thinkingElement = document.getElementById("thinking");
+                if (thinkingElement) {
+                    thinkingElement.remove();
+                }
+                addMessage("❌ Network error: Could not connect to the server.", "bot");
+            }
+        }
+
+        // Reset the conversation
+        async function resetChat() {
+            try {
+                const response = await fetch("/reset", {
+                    method: "POST"
+                });
+
+                if (response.ok) {
+                    // Clear all messages except welcome
+                    chatBox.innerHTML = "";
+                    addMessage("Chat reset! How can I help you?", "bot");
+                }
+            } catch (error) {
+                console.error("Reset failed:", error);
+            }
+        }
+
+        // Event listeners
+        sendBtn.addEventListener("click", sendMessage);
+
+        messageInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        resetBtn.addEventListener("click", resetChat);
+
+        // Focus on input on page load
+        window.addEventListener("load", function() {
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>
+
+</parameter>
+</invoke>
+</dots_function_call>
